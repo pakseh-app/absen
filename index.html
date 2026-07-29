@@ -1,23 +1,31 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>SIMA - Sistem Informasi Absensi Madrasah</title>
+    <meta charset="UTF-8">
 
-  <meta name="description" content="Sistem Informasi Absensi Madrasah">
-  <meta name="theme-color" content="#2563eb">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/responsive.css">
+    <title>SIMA - Sistem Informasi Absensi Madrasah</title>
+
+    <meta name="description" content="Sistem Informasi Absensi Madrasah">
+
+    <meta name="theme-color" content="#2563EB">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="stylesheet" href="css/responsive.css">
+
 </head>
 
 <body>
 
 <div id="app">
 
-    <!-- SIDEBAR -->
+    <!-- =======================
+         SIDEBAR
+    ======================== -->
 
     <aside class="sidebar">
 
@@ -57,7 +65,9 @@
 
 
 
-    <!-- CONTENT -->
+    <!-- =======================
+         CONTENT
+    ======================== -->
 
     <main class="content">
 
@@ -66,7 +76,9 @@
             <div>
 
                 <h1 id="pageTitle">
+
                     Dashboard
+
                 </h1>
 
                 <p id="todayDate"></p>
@@ -76,7 +88,9 @@
             <div class="sync-status">
 
                 <span id="syncIndicator">
-                    🟢 Tersinkron
+
+                    🟢 Siap
+
                 </span>
 
             </div>
@@ -87,33 +101,50 @@
 
         <!-- DASHBOARD -->
 
-        <section id="dashboard" class="page active">
+        <section
+            id="dashboard"
+            class="page active">
 
             <div class="cards">
 
                 <div class="card">
+
                     <h3>Total Siswa</h3>
+
                     <h2 id="totalStudents">0</h2>
+
                 </div>
 
                 <div class="card">
+
                     <h3>Hadir</h3>
+
                     <h2 id="presentCount">0</h2>
+
                 </div>
 
                 <div class="card">
+
                     <h3>Izin</h3>
+
                     <h2 id="permitCount">0</h2>
+
                 </div>
 
                 <div class="card">
+
                     <h3>Sakit</h3>
+
                     <h2 id="sickCount">0</h2>
+
                 </div>
 
                 <div class="card">
+
                     <h3>Alfa</h3>
+
                     <h2 id="absentCount">0</h2>
+
                 </div>
 
             </div>
@@ -121,22 +152,48 @@
 
 
             <h2 class="section-title">
+
                 Pilih Kelas
+
             </h2>
 
             <div class="class-grid">
 
-                <button class="class-card" data-class="1">Kelas 1</button>
+                <button class="class-card" data-class="1">
 
-                <button class="class-card" data-class="2">Kelas 2</button>
+                    Kelas 1
 
-                <button class="class-card" data-class="3">Kelas 3</button>
+                </button>
 
-                <button class="class-card" data-class="4">Kelas 4</button>
+                <button class="class-card" data-class="2">
 
-                <button class="class-card" data-class="5">Kelas 5</button>
+                    Kelas 2
 
-                <button class="class-card" data-class="6">Kelas 6</button>
+                </button>
+
+                <button class="class-card" data-class="3">
+
+                    Kelas 3
+
+                </button>
+
+                <button class="class-card" data-class="4">
+
+                    Kelas 4
+
+                </button>
+
+                <button class="class-card" data-class="5">
+
+                    Kelas 5
+
+                </button>
+
+                <button class="class-card" data-class="6">
+
+                    Kelas 6
+
+                </button>
 
             </div>
 
@@ -146,7 +203,9 @@
 
         <!-- DATA SISWA -->
 
-        <section id="students" class="page">
+        <section
+            id="students"
+            class="page">
 
         </section>
 
@@ -154,7 +213,9 @@
 
         <!-- ABSENSI -->
 
-        <section id="attendance" class="page">
+        <section
+            id="attendance"
+            class="page">
 
         </section>
 
@@ -162,7 +223,9 @@
 
         <!-- LAPORAN -->
 
-        <section id="reports" class="page">
+        <section
+            id="reports"
+            class="page">
 
         </section>
 
@@ -170,7 +233,9 @@
 
         <!-- PENGATURAN -->
 
-        <section id="settings" class="page">
+        <section
+            id="settings"
+            class="page">
 
         </section>
 
@@ -178,13 +243,34 @@
 
 </div>
 
+
+
+<!-- =======================
+     LIBRARY
+======================== -->
+
+<script src="libs/dexie.min.js"></script>
+
+
+
+<!-- =======================
+     APPLICATION
+======================== -->
+
 <script src="js/database.js"></script>
+
 <script src="js/students.js"></script>
+
 <script src="js/attendance.js"></script>
+
 <script src="js/report.js"></script>
+
 <script src="js/sheets.js"></script>
+
 <script src="js/ui.js"></script>
+
 <script src="js/app.js"></script>
 
 </body>
+
 </html>
