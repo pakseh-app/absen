@@ -10,27 +10,33 @@ const Attendance = {
 
     currentClass: "",
 
+    students: [],
+
+    records: [],
+
+
+
     /*
-    ==========================
+    ===========================================
     INIT
-    ==========================
+    ===========================================
     */
 
-    init() {
+    async init() {
 
-        this.renderPage();
+        this.render();
 
     },
 
 
 
     /*
-    ==========================
+    ===========================================
     HALAMAN
-    ==========================
+    ===========================================
     */
 
-    renderPage() {
+    render() {
 
         const page = document.getElementById("attendance");
 
@@ -38,55 +44,82 @@ const Attendance = {
 
         page.innerHTML = `
 
-            <div class="attendance-header">
+        <div class="toolbar">
 
-                <div>
+            <div class="toolbar-left">
 
-                    <h2 id="attendanceTitle">
-                        Absensi
-                    </h2>
+                <select
+                    id="attendanceClass"
+                    class="input">
 
-                    <p id="attendanceDate"></p>
+                    <option value="">Pilih Kelas</option>
 
-                </div>
+                    <option value="1">Kelas 1</option>
+                    <option value="2">Kelas 2</option>
+                    <option value="3">Kelas 3</option>
+                    <option value="4">Kelas 4</option>
+                    <option value="5">Kelas 5</option>
+                    <option value="6">Kelas 6</option>
 
-                <button
-                    class="btn"
-                    id="btnAllPresent">
-
-                    Tandai Semua Hadir
-
-                </button>
+                </select>
 
             </div>
 
-            <div id="attendanceList"></div>
+            <div class="toolbar-right">
 
-            <div class="mt-20">
+                <button
+                    class="btn btn-secondary"
+                    id="btnAllPresent">
+
+                    ✓ Semua Hadir
+
+                </button>
 
                 <button
                     class="btn"
                     id="btnSaveAttendance">
 
-                    Simpan Absensi
+                    💾 Simpan
 
                 </button>
 
             </div>
 
+        </div>
+
+        <div id="attendanceTable"></div>
+
         `;
 
         document
+
+            .getElementById("attendanceClass")
+
+            .addEventListener("change", async (e)=>{
+
+                this.currentClass = e.target.value;
+
+                await this.loadStudents();
+
+                this.refresh();
+
+            });
+
+        document
+
             .getElementById("btnAllPresent")
-            .addEventListener("click", () => {
+
+            .addEventListener("click",()=>{
 
                 this.markAllPresent();
 
             });
 
         document
+
             .getElementById("btnSaveAttendance")
-            .addEventListener("click", () => {
+
+            .addEventListener("click",()=>{
 
                 this.save();
 
@@ -97,177 +130,370 @@ const Attendance = {
 
 
     /*
-    ==========================
-    BUKA KELAS
-    ==========================
+    ===========================================
+    LOAD SISWA
+    ===========================================
     */
 
-    open(kelas) {
+    async loadStudents(){
 
-        this.currentClass = kelas;
+        let data = await Database.getStudents();
 
-        document.getElementById(
-            "attendanceTitle"
-        ).textContent = "Absensi Kelas " + kelas;
+        data = data.filter(
 
-        document.getElementById(
-            "attendanceDate"
-        ).textContent = new Date().toLocaleDateString("id-ID");
+            item=>item.kelas==this.currentClass
 
-        this.renderList();
+        );
+
+        this.students = data;
 
     },
 
 
 
     /*
-    ==========================
-    LIST SISWA
-    ==========================
+    ===========================================
+    TABLE
+    ===========================================
     */
 
-    renderList() {
+    refresh(){
 
-        const list =
-            document.getElementById("attendanceList");
+        const table = document.getElementById("attendanceTable");
 
-        const students = Database
-            .getStudents()
-            .filter(item => item.kelas == this.currentClass);
+        if(this.currentClass===""){
 
-        if (students.length === 0) {
+            table.innerHTML=`
 
-            list.innerHTML = `
-                <div class="card text-center">
+                <div class="card">
 
-                    Belum ada siswa pada kelas ini.
+                    Pilih kelas terlebih dahulu.
 
                 </div>
+
             `;
 
             return;
 
         }
 
-        let html = "";
+        if(this.students.length===0){
 
-        students.forEach(student => {
+            table.innerHTML=`
 
-            html += `
+                <div class="card">
 
-            <div class="card mt-20 attendance-item">
-
-                <div class="attendance-info">
-
-                    <strong>${student.nama}</strong><br>
-
-                    <small>NIS : ${student.nis}</small>
+                    Belum ada siswa pada kelas ini.
 
                 </div>
 
-                <div class="attendance-status">
+            `;
+
+            return;
+
+        }
+
+        let html=`
+
+        <table>
+
+        <thead>
+
+        <tr>
+
+            <th width="120">
+
+                NIS
+
+            </th>
+
+            <th>
+
+                Nama
+
+            </th>
+
+            <th width="220">
+
+                Status
+
+            </th>
+
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        `;
+
+        this.students.forEach(student=>{
+
+            html+=`
+
+            <tr>
+
+                <td>
+
+                    ${student.nis}
+
+                </td>
+
+                <td>
+
+                    ${student.nama}
+
+                </td>
+
+                <td>
 
                     <select
-                        class="attendance-select"
-                        data-nis="${student.nis}">
+
+                        class="attendance-status input"
+
+                        data-nis="${student.nis}"
+
+                        data-name="${student.nama}"
+
+                        data-class="${student.kelas}">
 
                         <option value="Hadir">
+
                             Hadir
+
                         </option>
 
                         <option value="Izin">
+
                             Izin
+
                         </option>
 
                         <option value="Sakit">
+
                             Sakit
+
                         </option>
 
                         <option value="Alfa">
+
                             Alfa
+
                         </option>
 
                     </select>
 
-                </div>
+                </td>
 
-            </div>
+            </tr>
 
             `;
 
         });
 
-        list.innerHTML = html;
+        html+=`
+
+        </tbody>
+
+        </table>
+
+        `;
+
+        table.innerHTML = html;
 
     },
 
-
-
-    /*
-    ==========================
+        /*
+    ===========================================
     TANDAI SEMUA HADIR
-    ==========================
+    ===========================================
     */
 
     markAllPresent() {
 
-        document
-            .querySelectorAll(".attendance-select")
-            .forEach(select => {
+        const selects = document.querySelectorAll(".attendance-status");
 
-                select.value = "Hadir";
+        selects.forEach(select => {
 
-            });
+            select.value = "Hadir";
+
+        });
+
+        UI.success("Semua siswa ditandai Hadir.");
 
     },
 
 
 
     /*
-    ==========================
-    SIMPAN
-    ==========================
+    ===========================================
+    SIMPAN ABSENSI
+    ===========================================
     */
 
-    save() {
+    async save() {
 
-        const date =
-            new Date().toISOString().slice(0,10);
+        if (this.currentClass === "") {
 
-        document
-            .querySelectorAll(".attendance-select")
-            .forEach(select => {
+            UI.warning("Pilih kelas terlebih dahulu.");
 
-                const nis = select.dataset.nis;
-
-                const student =
-                    Database.getStudent(nis);
-
-                if (!student) return;
-
-                Database.saveAttendance({
-
-                    date: date,
-
-                    nis: student.nis,
-
-                    nama: student.nama,
-
-                    class: student.kelas,
-
-                    status: select.value
-
-                });
-
-            });
-
-        if(typeof App !== "undefined"){
-
-            App.loadDashboard();
+            return;
 
         }
 
-        alert("Absensi berhasil disimpan.");
+        const selects = document.querySelectorAll(".attendance-status");
+
+        if (selects.length === 0) {
+
+            UI.warning("Tidak ada data siswa.");
+
+            return;
+
+        }
+
+        UI.showLoading("Menyimpan absensi...");
+
+        const today = Utils.today();
+
+        let total = 0;
+
+        for (const select of selects) {
+
+            const record = {
+
+                date: today,
+
+                nis: select.dataset.nis,
+
+                nama: select.dataset.name,
+
+                kelas: select.dataset.class,
+
+                status: select.value,
+
+                updated: new Date().toISOString()
+
+            };
+
+            await Database.saveAttendance(record);
+
+            total++;
+
+        }
+
+        UI.hideLoading();
+
+        UI.success(total + " absensi berhasil disimpan.");
+
+
+
+        /*
+        ===========================
+        REFRESH DASHBOARD
+        ===========================
+        */
+
+        if (typeof UI.refreshDashboard === "function") {
+
+            await UI.refreshDashboard();
+
+        }
+
+
+
+        /*
+        ===========================
+        GOOGLE SHEETS
+        ===========================
+        */
+
+        if (
+
+            typeof Sheets !== "undefined" &&
+
+            typeof Sheets.syncAttendance === "function"
+
+        ) {
+
+            try {
+
+                await Sheets.syncAttendance();
+
+            }
+
+            catch (err) {
+
+                console.error(err);
+
+            }
+
+        }
+
+    },
+
+
+
+    /*
+    ===========================================
+    LOAD ABSENSI HARI INI
+    ===========================================
+    */
+
+    async loadTodayAttendance() {
+
+        const today = Utils.today();
+
+        const records = await Database.getAttendanceByDate(today);
+
+        if (records.length === 0) return;
+
+        setTimeout(() => {
+
+            records.forEach(record => {
+
+                const select = document.querySelector(
+
+                    `.attendance-status[data-nis="${record.nis}"]`
+
+                );
+
+                if (select) {
+
+                    select.value = record.status;
+
+                }
+
+            });
+
+        }, 100);
+
+    },
+
+
+
+    /*
+    ===========================================
+    BUKA KELAS
+    ===========================================
+    */
+
+    async openClass(kelas) {
+
+        this.currentClass = kelas;
+
+        const select = document.getElementById("attendanceClass");
+
+        if (select) {
+
+            select.value = kelas;
+
+        }
+
+        await this.loadStudents();
+
+        this.refresh();
+
+        await this.loadTodayAttendance();
 
     }
 
@@ -275,8 +501,20 @@ const Attendance = {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
+/*
+===========================================
+START MODULE
+===========================================
+*/
 
-    Attendance.init();
+document.addEventListener(
 
-});
+    "DOMContentLoaded",
+
+    () => {
+
+        Attendance.init();
+
+    }
+
+);
