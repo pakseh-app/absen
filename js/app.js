@@ -1,9 +1,8 @@
 /*
 ===========================================
 SIMA
-Sistem Informasi Absensi Madrasah
 Main Application
-Version : 1.0
+Version 2.0
 ===========================================
 */
 
@@ -11,68 +10,52 @@ const App = {
 
     currentPage: "dashboard",
 
-    init() {
-
-        this.showToday();
+    async init() {
 
         this.initMenu();
 
         this.initClassButton();
 
-        this.loadDashboard();
+        // Tampilkan tanggal
+        if (typeof UI !== "undefined") {
+            UI.showToday();
+        }
+
+        // Refresh dashboard
+        if (typeof UI !== "undefined") {
+            await UI.refreshDashboard();
+        }
+
+        // Muat data siswa
+        if (typeof Students !== "undefined") {
+            await Students.load();
+            Students.render();
+        }
 
     },
 
 
 
     /*
-    ===========================
-    TANGGAL
-    ===========================
-    */
-
-    showToday() {
-
-        const el = document.getElementById("todayDate");
-
-        if (!el) return;
-
-        const options = {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        };
-
-        el.textContent = new Date().toLocaleDateString("id-ID", options);
-
-    },
-
-
-
-    /*
-    ===========================
+    ===========================================
     MENU
-    ===========================
+    ===========================================
     */
 
     initMenu() {
 
-        const menus = document.querySelectorAll(".menu");
+        document.querySelectorAll(".menu").forEach(btn => {
 
-        menus.forEach(menu => {
+            btn.onclick = () => {
 
-            menu.addEventListener("click", () => {
+                document.querySelectorAll(".menu")
+                    .forEach(x => x.classList.remove("active"));
 
-                menus.forEach(item => item.classList.remove("active"));
+                btn.classList.add("active");
 
-                menu.classList.add("active");
+                this.showPage(btn.dataset.page);
 
-                const page = menu.dataset.page;
-
-                this.changePage(page);
-
-            });
+            };
 
         });
 
@@ -81,56 +64,49 @@ const App = {
 
 
     /*
-    ===========================
-    PINDAH HALAMAN
-    ===========================
+    ===========================================
+    SHOW PAGE
+    ===========================================
     */
 
-    changePage(page) {
+    showPage(page) {
 
         this.currentPage = page;
 
-        document.querySelectorAll(".page").forEach(section => {
+        document.querySelectorAll(".page")
+            .forEach(p => p.classList.remove("active"));
 
-            section.classList.remove("active");
+        const active = document.getElementById(page);
 
-        });
+        if (active) {
 
-        const activePage = document.getElementById(page);
-
-        if (activePage) {
-
-            activePage.classList.add("active");
+            active.classList.add("active");
 
         }
 
         const title = document.getElementById("pageTitle");
 
-        if (title) {
+        switch (page) {
 
-            switch (page) {
+            case "dashboard":
+                title.textContent = "Dashboard";
+                break;
 
-                case "dashboard":
-                    title.textContent = "Dashboard";
-                    break;
+            case "students":
+                title.textContent = "Data Siswa";
+                break;
 
-                case "students":
-                    title.textContent = "Data Siswa";
-                    break;
+            case "attendance":
+                title.textContent = "Absensi";
+                break;
 
-                case "attendance":
-                    title.textContent = "Absensi";
-                    break;
+            case "reports":
+                title.textContent = "Laporan";
+                break;
 
-                case "reports":
-                    title.textContent = "Laporan";
-                    break;
-
-                case "settings":
-                    title.textContent = "Pengaturan";
-                    break;
-
-            }
+            case "settings":
+                title.textContent = "Pengaturan";
+                break;
 
         }
 
@@ -139,72 +115,42 @@ const App = {
 
 
     /*
-    ===========================
-    DASHBOARD
-    ===========================
-    */
-
-    loadDashboard() {
-
-        if (typeof Database === "undefined") return;
-
-        const students = Database.getStudents();
-
-        const attendance = Database.getTodayAttendance();
-
-        document.getElementById("totalStudents").textContent = students.length;
-
-        document.getElementById("presentCount").textContent =
-            attendance.filter(item => item.status === "Hadir").length;
-
-        document.getElementById("permitCount").textContent =
-            attendance.filter(item => item.status === "Izin").length;
-
-        document.getElementById("sickCount").textContent =
-            attendance.filter(item => item.status === "Sakit").length;
-
-        document.getElementById("absentCount").textContent =
-            attendance.filter(item => item.status === "Alfa").length;
-
-    },
-
-
-
-    /*
-    ===========================
+    ===========================================
     PILIH KELAS
-    ===========================
+    ===========================================
     */
 
     initClassButton() {
 
-        document.querySelectorAll(".class-card").forEach(button => {
+        document.querySelectorAll(".class-card").forEach(card => {
 
-            button.addEventListener("click", () => {
+            card.onclick = () => {
 
-                const kelas = button.dataset.class;
+                const kelas = card.dataset.class;
 
-                if (typeof Attendance !== "undefined") {
+                this.showPage("attendance");
+
+                document.querySelectorAll(".menu")
+                    .forEach(m => {
+
+                        m.classList.remove("active");
+
+                        if (m.dataset.page === "attendance") {
+
+                            m.classList.add("active");
+
+                        }
+
+                    });
+
+                if (typeof Attendance !== "undefined" &&
+                    typeof Attendance.open === "function") {
 
                     Attendance.open(kelas);
 
                 }
 
-                this.changePage("attendance");
-
-                document.querySelectorAll(".menu").forEach(menu => {
-
-                    menu.classList.remove("active");
-
-                    if (menu.dataset.page === "attendance") {
-
-                        menu.classList.add("active");
-
-                    }
-
-                });
-
-            });
+            };
 
         });
 
@@ -214,14 +160,8 @@ const App = {
 
 
 
-/*
-===========================================
-START APPLICATION
-===========================================
-*/
+document.addEventListener("DOMContentLoaded", async () => {
 
-document.addEventListener("DOMContentLoaded", () => {
-
-    App.init();
+    await App.init();
 
 });
