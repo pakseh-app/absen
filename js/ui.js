@@ -2,191 +2,454 @@
 ===========================================
 SIMA
 UI Module
-Version : 1.0
+Version 1.0
 ===========================================
 */
 
 const UI = {
 
-    toastTimer: null,
+    loadingEl: null,
+    toastEl: null,
+    modalEl: null,
+    modalBody: null,
 
     init() {
 
-        this.createToast();
-
         this.createLoading();
+        this.createToast();
+        this.createModal();
 
     },
 
 
 
     /*
-    ===================================
+    ===========================================
+    LOADING
+    ===========================================
+    */
+
+    createLoading() {
+
+        const div = document.createElement("div");
+
+        div.id = "loading";
+
+        div.innerHTML = `
+            <div class="loading-box">
+
+                <div class="loading-spinner"></div>
+
+                <p>Memuat...</p>
+
+            </div>
+        `;
+
+        document.body.appendChild(div);
+
+        this.loadingEl = div;
+
+    },
+
+
+
+    showLoading(text = "Memuat...") {
+
+        this.loadingEl.style.display = "flex";
+
+        this.loadingEl.querySelector("p").textContent = text;
+
+    },
+
+
+
+    hideLoading() {
+
+        this.loadingEl.style.display = "none";
+
+    },
+
+
+
+    /*
+    ===========================================
     TOAST
-    ===================================
+    ===========================================
     */
 
     createToast() {
 
-        if (document.getElementById("toast")) return;
+        const div = document.createElement("div");
 
-        const toast = document.createElement("div");
+        div.id = "toast";
 
-        toast.id = "toast";
+        document.body.appendChild(div);
 
-        toast.style.position = "fixed";
-        toast.style.top = "20px";
-        toast.style.right = "20px";
-        toast.style.minWidth = "280px";
-        toast.style.padding = "14px 18px";
-        toast.style.borderRadius = "12px";
-        toast.style.background = "#2563EB";
-        toast.style.color = "#FFFFFF";
-        toast.style.fontWeight = "600";
-        toast.style.boxShadow = "0 10px 25px rgba(0,0,0,.15)";
-        toast.style.zIndex = "99999";
-        toast.style.display = "none";
-
-        document.body.appendChild(toast);
+        this.toastEl = div;
 
     },
 
 
 
-    /*
-    ===================================
-    SHOW TOAST
-    ===================================
-    */
+    toast(message, type = "success") {
 
-    toast(message, type = "info") {
+        this.toastEl.className = "";
 
-        const toast = document.getElementById("toast");
+        this.toastEl.classList.add(type);
 
-        if (!toast) return;
+        this.toastEl.innerHTML = message;
+
+        this.toastEl.classList.add("show");
 
         clearTimeout(this.toastTimer);
 
-        let color = "#2563EB";
-
-        switch(type){
-
-            case "success":
-                color = "#22C55E";
-                break;
-
-            case "warning":
-                color = "#EAB308";
-                break;
-
-            case "error":
-                color = "#EF4444";
-                break;
-
-        }
-
-        toast.style.background = color;
-
-        toast.textContent = message;
-
-        toast.style.display = "block";
-
         this.toastTimer = setTimeout(() => {
 
-            toast.style.display = "none";
+            this.toastEl.classList.remove("show");
 
-        },3000);
+        }, 3000);
+
+    },
+
+
+
+    success(msg) {
+
+        this.toast(msg, "success");
+
+    },
+
+
+
+    error(msg) {
+
+        this.toast(msg, "error");
+
+    },
+
+
+
+    warning(msg) {
+
+        this.toast(msg, "warning");
+
+    },
+
+
+
+    info(msg) {
+
+        this.toast(msg, "info");
 
     },
 
 
 
     /*
-    ===================================
-    LOADING
-    ===================================
+    ===========================================
+    MODAL
+    ===========================================
     */
 
-    createLoading(){
+    createModal() {
 
-        if(document.getElementById("loading")) return;
+        const modal = document.createElement("div");
 
-        const loading = document.createElement("div");
+        modal.id = "modal";
 
-        loading.id = "loading";
+        modal.innerHTML = `
 
-        loading.innerHTML = `
-            <div class="loading-box">
-                Memuat...
+            <div class="modal-content">
+
+                <div class="modal-header">
+
+                    <h3 id="modalTitle">
+
+                    </h3>
+
+                    <button id="closeModal">
+
+                        ✕
+
+                    </button>
+
+                </div>
+
+                <div
+                    id="modalBody"
+                    class="modal-body">
+
+                </div>
+
             </div>
+
         `;
 
-        loading.style.position = "fixed";
-        loading.style.left = "0";
-        loading.style.top = "0";
-        loading.style.right = "0";
-        loading.style.bottom = "0";
-        loading.style.background = "rgba(255,255,255,.6)";
-        loading.style.display = "none";
-        loading.style.justifyContent = "center";
-        loading.style.alignItems = "center";
-        loading.style.zIndex = "99998";
+        document.body.appendChild(modal);
 
-        document.body.appendChild(loading);
+        this.modalEl = modal;
+
+        this.modalBody = document.getElementById("modalBody");
+
+        document
+
+            .getElementById("closeModal")
+
+            .onclick = () => {
+
+                this.close();
+
+            };
+
+
+
+        modal.onclick = (e) => {
+
+            if (e.target.id == "modal") {
+
+                this.close();
+
+            }
+
+        };
+
+    },
+
+
+
+    open(title, html) {
+
+        document
+
+            .getElementById("modalTitle")
+
+            .textContent = title;
+
+        this.modalBody.innerHTML = html;
+
+        this.modalEl.style.display = "flex";
+
+    },
+
+
+
+    close() {
+
+        this.modalEl.style.display = "none";
 
     },
 
 
 
     /*
-    ===================================
-    SHOW LOADING
-    ===================================
-    */
-
-    showLoading(){
-
-        const loading = document.getElementById("loading");
-
-        if(loading){
-
-            loading.style.display = "flex";
-
-        }
-
-    },
-
-
-
-    /*
-    ===================================
-    HIDE LOADING
-    ===================================
-    */
-
-    hideLoading(){
-
-        const loading = document.getElementById("loading");
-
-        if(loading){
-
-            loading.style.display = "none";
-
-        }
-
-    },
-
-
-
-    /*
-    ===================================
+    ===========================================
     CONFIRM
-    ===================================
+    ===========================================
     */
 
-    confirm(message){
+    confirm(title, message, callback) {
 
-        return window.confirm(message);
+        this.open(title, `
+
+            <p>${message}</p>
+
+            <div class="modal-footer">
+
+                <button
+                    id="cancelBtn"
+                    class="btn btn-secondary">
+
+                    Batal
+
+                </button>
+
+                <button
+                    id="okBtn"
+                    class="btn">
+
+                    Ya
+
+                </button>
+
+            </div>
+
+        `);
+
+        document
+
+            .getElementById("cancelBtn")
+
+            .onclick = () => {
+
+                this.close();
+
+            };
+
+        document
+
+            .getElementById("okBtn")
+
+            .onclick = () => {
+
+                this.close();
+
+                callback();
+
+            };
+
+    },
+
+
+
+    /*
+    ===========================================
+    ALERT
+    ===========================================
+    */
+
+    alert(title, message) {
+
+        this.open(title, `
+
+            <p>${message}</p>
+
+            <div class="modal-footer">
+
+                <button
+                    id="okAlert"
+                    class="btn">
+
+                    OK
+
+                </button>
+
+            </div>
+
+        `);
+
+        document
+
+            .getElementById("okAlert")
+
+            .onclick = () => {
+
+                this.close();
+
+            };
+
+    },
+
+
+
+    /*
+    ===========================================
+    BADGE STATUS
+    ===========================================
+    */
+
+    badge(status) {
+
+        switch (status) {
+
+            case "Hadir":
+
+                return `<span class="badge success">Hadir</span>`;
+
+            case "Izin":
+
+                return `<span class="badge warning">Izin</span>`;
+
+            case "Sakit":
+
+                return `<span class="badge info">Sakit</span>`;
+
+            case "Alfa":
+
+                return `<span class="badge danger">Alfa</span>`;
+
+            default:
+
+                return `<span class="badge">${status}</span>`;
+
+        }
+
+    },
+
+
+
+    /*
+    ===========================================
+    DATE
+    ===========================================
+    */
+
+    showToday() {
+
+        const el = document.getElementById("todayDate");
+
+        if (!el) return;
+
+        el.innerHTML = Utils.formatDate();
+
+    },
+
+
+
+    /*
+    ===========================================
+    DASHBOARD
+    ===========================================
+    */
+
+    async refreshDashboard() {
+
+        const data = await Database.dashboard();
+
+        document.getElementById("totalStudents").textContent = data.students;
+
+        document.getElementById("presentCount").textContent = data.hadir;
+
+        document.getElementById("permitCount").textContent = data.izin;
+
+        document.getElementById("sickCount").textContent = data.sakit;
+
+        document.getElementById("absentCount").textContent = data.alfa;
+
+    },
+
+
+
+    /*
+    ===========================================
+    SYNC STATUS
+    ===========================================
+    */
+
+    setSync(text, color = "#22c55e") {
+
+        const el = document.getElementById("syncIndicator");
+
+        if (!el) return;
+
+        el.innerHTML = text;
+
+        el.style.color = color;
+
+    },
+
+
+
+    online() {
+
+        this.setSync("🟢 Online");
+
+    },
+
+
+
+    offline() {
+
+        this.setSync("🔴 Offline", "#ef4444");
 
     }
 
@@ -194,8 +457,38 @@ const UI = {
 
 
 
-document.addEventListener("DOMContentLoaded",()=>{
+document.addEventListener("DOMContentLoaded", async () => {
 
     UI.init();
+
+    UI.showToday();
+
+    await UI.refreshDashboard();
+
+    if (navigator.onLine) {
+
+        UI.online();
+
+    } else {
+
+        UI.offline();
+
+    }
+
+});
+
+
+
+window.addEventListener("online", () => {
+
+    UI.online();
+
+});
+
+
+
+window.addEventListener("offline", () => {
+
+    UI.offline();
 
 });
