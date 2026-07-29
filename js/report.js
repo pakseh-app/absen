@@ -1,28 +1,52 @@
 /*
 ===========================================
 SIMA
-Report Module
+Reports Module
 Version : 1.0
 ===========================================
 */
 
-const Report = {
+const Reports = {
 
-    init() {
+    data: [],
 
-        this.renderPage();
+    filtered: [],
+
+    async init() {
+
+        this.render();
+
+        await this.load();
 
     },
 
 
 
     /*
-    ==========================
-    HALAMAN
-    ==========================
+    ==========================================
+    LOAD DATA
+    ==========================================
     */
 
-    renderPage() {
+    async load() {
+
+        this.data = await Database.getAttendance();
+
+        this.filtered = [...this.data];
+
+        this.refresh();
+
+    },
+
+
+
+    /*
+    ==========================================
+    HALAMAN
+    ==========================================
+    */
+
+    render() {
 
         const page = document.getElementById("reports");
 
@@ -30,49 +54,39 @@ const Report = {
 
         page.innerHTML = `
 
-            <div class="report-header">
+        <div class="toolbar">
 
-                <div class="form-group">
+            <div class="toolbar-left">
 
-                    <label>Tanggal</label>
+                <input
+                    type="date"
+                    id="reportDate"
+                    class="input">
 
-                    <input
-                        type="date"
-                        id="reportDate"
-                    >
+                <select
+                    id="reportClass"
+                    class="input">
 
-                </div>
+                    <option value="">Semua Kelas</option>
 
-                <div class="form-group">
+                    <option value="1">Kelas 1</option>
+                    <option value="2">Kelas 2</option>
+                    <option value="3">Kelas 3</option>
+                    <option value="4">Kelas 4</option>
+                    <option value="5">Kelas 5</option>
+                    <option value="6">Kelas 6</option>
 
-                    <label>Kelas</label>
+                </select>
 
-                    <select id="reportClass">
-
-                        <option value="">Semua Kelas</option>
-
-                        <option value="1">Kelas 1</option>
-                        <option value="2">Kelas 2</option>
-                        <option value="3">Kelas 3</option>
-                        <option value="4">Kelas 4</option>
-                        <option value="5">Kelas 5</option>
-                        <option value="6">Kelas 6</option>
-
-                    </select>
-
-                </div>
-
-                <button
-                    class="btn"
-                    id="btnShowReport">
-
-                    Tampilkan
-
-                </button>
+                <input
+                    type="text"
+                    id="reportSearch"
+                    class="input"
+                    placeholder="Cari Nama / NIS">
 
             </div>
 
-            <div class="mt-20">
+            <div class="toolbar-right">
 
                 <button
                     class="btn"
@@ -82,68 +96,192 @@ const Report = {
 
                 </button>
 
+                <button
+                    class="btn btn-secondary"
+                    id="btnPrint">
+
+                    Print
+
+                </button>
+
             </div>
 
-            <div
-                id="reportTable"
-                class="mt-20">
+        </div>
 
-            </div>
+        <div id="reportSummary"></div>
+
+        <div id="reportTable"></div>
 
         `;
 
-        document.getElementById("reportDate").value =
-            new Date().toISOString().slice(0,10);
 
-        document
-            .getElementById("btnShowReport")
-            .addEventListener("click", () => {
 
-                this.show();
+        document.getElementById("reportDate").value = Utils.today();
 
-            });
+        document.getElementById("reportDate")
+        .addEventListener("change",()=>this.filter());
 
-        document
-            .getElementById("btnExportCSV")
-            .addEventListener("click", () => {
+        document.getElementById("reportClass")
+        .addEventListener("change",()=>this.filter());
 
-                this.exportCSV();
+        document.getElementById("reportSearch")
+        .addEventListener("input",()=>this.filter());
 
-            });
+        document.getElementById("btnExportCSV")
+        .addEventListener("click",()=>this.exportCSV());
 
-        this.show();
+        document.getElementById("btnPrint")
+        .addEventListener("click",()=>window.print());
 
     },
 
 
 
     /*
-    ==========================
-    TAMPILKAN
-    ==========================
+    ==========================================
+    FILTER
+    ==========================================
     */
 
-    show() {
+    filter(){
 
         const date =
-            document.getElementById("reportDate").value;
+        document.getElementById("reportDate").value;
 
         const kelas =
-            document.getElementById("reportClass").value;
+        document.getElementById("reportClass").value;
 
-        let data = Database.getAttendance();
+        const keyword =
+        document.getElementById("reportSearch")
+        .value
+        .toLowerCase();
 
-        if (date !== "") {
+        this.filtered = this.data.filter(item=>{
 
-            data = data.filter(item => item.date === date);
+            const matchDate =
+            date=="" || item.date==date;
 
-        }
+            const matchClass =
+            kelas=="" || item.kelas==kelas;
 
-        if (kelas !== "") {
+            const matchKeyword =
 
-            data = data.filter(item => item.class == kelas);
+                item.nama
+                .toLowerCase()
+                .includes(keyword)
 
-        }
+                ||
+
+                item.nis
+                .includes(keyword);
+
+            return (
+
+                matchDate &&
+
+                matchClass &&
+
+                matchKeyword
+
+            );
+
+        });
+
+        this.refresh();
+
+    },
+
+        /*
+    ==========================================
+    REFRESH
+    ==========================================
+    */
+
+    refresh(){
+
+        this.renderSummary();
+
+        this.renderTable();
+
+    },
+
+
+
+    /*
+    ==========================================
+    SUMMARY
+    ==========================================
+    */
+
+    renderSummary(){
+
+        const el = document.getElementById("reportSummary");
+
+        const hadir =
+            this.filtered.filter(x=>x.status=="Hadir").length;
+
+        const izin =
+            this.filtered.filter(x=>x.status=="Izin").length;
+
+        const sakit =
+            this.filtered.filter(x=>x.status=="Sakit").length;
+
+        const alfa =
+            this.filtered.filter(x=>x.status=="Alfa").length;
+
+        el.innerHTML = `
+
+        <div class="cards">
+
+            <div class="card">
+
+                <h3>Hadir</h3>
+
+                <h2>${hadir}</h2>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Izin</h3>
+
+                <h2>${izin}</h2>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Sakit</h3>
+
+                <h2>${sakit}</h2>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Alfa</h3>
+
+                <h2>${alfa}</h2>
+
+            </div>
+
+        </div>
+
+        `;
+
+    },
+
+
+
+    /*
+    ==========================================
+    TABLE
+    ==========================================
+    */
+
+    renderTable(){
+
+        const table = document.getElementById("reportTable");
 
         let html = `
 
@@ -171,15 +309,43 @@ const Report = {
 
         `;
 
-        if (data.length === 0) {
+        if(this.filtered.length===0){
+
+            html += `
+
+                <tr>
+
+                    <td colspan="5"
+
+                        class="text-center">
+
+                        Tidak ada data.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+
+        this.filtered.forEach(item=>{
 
             html += `
 
             <tr>
 
-                <td colspan="5" class="text-center">
+                <td>${item.date}</td>
 
-                    Tidak ada data.
+                <td>${item.nis}</td>
+
+                <td>${item.nama}</td>
+
+                <td>${item.kelas}</td>
+
+                <td>
+
+                    ${UI.badge(item.status)}
 
                 </td>
 
@@ -187,31 +353,7 @@ const Report = {
 
             `;
 
-        } else {
-
-            data.forEach(item => {
-
-                html += `
-
-                <tr>
-
-                    <td>${item.date}</td>
-
-                    <td>${item.nis}</td>
-
-                    <td>${item.nama}</td>
-
-                    <td>${item.class}</td>
-
-                    <td>${item.status}</td>
-
-                </tr>
-
-                `;
-
-            });
-
-        }
+        });
 
         html += `
 
@@ -221,68 +363,89 @@ const Report = {
 
         `;
 
-        document.getElementById("reportTable").innerHTML = html;
+        table.innerHTML = html;
 
     },
 
 
 
     /*
-    ==========================
+    ==========================================
     EXPORT CSV
-    ==========================
+    ==========================================
     */
 
-    exportCSV() {
+    exportCSV(){
 
-        let data = Database.getAttendance();
+        if(this.filtered.length===0){
 
-        const date =
-            document.getElementById("reportDate").value;
+            UI.warning("Tidak ada data untuk diekspor.");
 
-        const kelas =
-            document.getElementById("reportClass").value;
-
-        if (date !== "") {
-
-            data = data.filter(item => item.date === date);
-
-        }
-
-        if (kelas !== "") {
-
-            data = data.filter(item => item.class == kelas);
+            return;
 
         }
 
         let csv =
             "Tanggal,NIS,Nama,Kelas,Status\n";
 
-        data.forEach(item => {
+        this.filtered.forEach(item=>{
 
             csv +=
-                `${item.date},${item.nis},${item.nama},${item.class},${item.status}\n`;
+
+                `"${item.date}",`+
+
+                `"${item.nis}",`+
+
+                `"${item.nama}",`+
+
+                `"${item.kelas}",`+
+
+                `"${item.status}"\n`;
 
         });
 
-        const blob =
-            new Blob([csv], {
-                type: "text/csv;charset=utf-8;"
-            });
+        const blob = new Blob(
+
+            [csv],
+
+            {
+
+                type:"text/csv;charset=utf-8;"
+
+            }
+
+        );
 
         const url =
             URL.createObjectURL(blob);
 
-        const link =
+        const a =
             document.createElement("a");
 
-        link.href = url;
+        a.href = url;
 
-        link.download = "laporan_absensi.csv";
+        a.download =
+            "laporan-absensi-"+Utils.today()+".csv";
 
-        link.click();
+        a.click();
 
         URL.revokeObjectURL(url);
+
+        UI.success("CSV berhasil dibuat.");
+
+    },
+
+
+
+    /*
+    ==========================================
+    RELOAD
+    ==========================================
+    */
+
+    async reload(){
+
+        await this.load();
 
     }
 
@@ -290,8 +453,20 @@ const Report = {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
+/*
+===========================================
+START MODULE
+===========================================
+*/
 
-    Report.init();
+document.addEventListener(
 
-});
+    "DOMContentLoaded",
+
+    ()=>{
+
+        Reports.init();
+
+    }
+
+);
