@@ -135,6 +135,21 @@ const Database = {
     },
 
 
+    /*
+===========================================
+TODAY ATTENDANCE
+===========================================
+*/
+
+async getTodayAttendance(){
+
+    return await this.getAttendanceByDate(
+
+        Utils.today()
+
+    );
+
+},
 
     async deleteAttendance(date,nis){
 
