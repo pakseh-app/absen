@@ -14,7 +14,7 @@ const Sheets = {
     ===========================================
     */
 
-    API_URL: "",
+    API_URL: "https://script.google.com/macros/s/AKfycbxJqTbfvS4q69Gs5xEqwfY8-wQjc9udp3v8bT37B9_srest8PUojPhcwhlgy7NeU3bXZw/exec",
 
 
 
