@@ -1,41 +1,190 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="icon" type="image/png" href="/logo.png" />
+  <title>SIMA - Sistem Informasi Absensi Madrasah</title>
 
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+  <meta name="description" content="Sistem Informasi Absensi Madrasah">
+  <meta name="theme-color" content="#2563eb">
 
-    <meta
-      name="description"
-      content="SIMA - Sistem Informasi Absensi Madrasah"
-    />
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
 
-    <meta
-      name="theme-color"
-      content="#2563EB"
-    />
+<body>
 
-    <meta
-      name="author"
-      content="SIMA"
-    />
+<div id="app">
 
-    <title>SIMA | Sistem Informasi Absensi Madrasah</title>
-  </head>
+    <!-- SIDEBAR -->
 
-  <body>
+    <aside class="sidebar">
 
-    <div id="root"></div>
+        <div class="logo">
 
-    <script
-      type="module"
-      src="/src/main.tsx">
-    </script>
+            <h2>SIMA</h2>
 
-  </body>
+            <span>Sistem Informasi Absensi Madrasah</span>
+
+        </div>
+
+        <nav>
+
+            <button class="menu active" data-page="dashboard">
+                Dashboard
+            </button>
+
+            <button class="menu" data-page="students">
+                Data Siswa
+            </button>
+
+            <button class="menu" data-page="attendance">
+                Absensi
+            </button>
+
+            <button class="menu" data-page="reports">
+                Laporan
+            </button>
+
+            <button class="menu" data-page="settings">
+                Pengaturan
+            </button>
+
+        </nav>
+
+    </aside>
+
+
+
+    <!-- CONTENT -->
+
+    <main class="content">
+
+        <header class="topbar">
+
+            <div>
+
+                <h1 id="pageTitle">
+                    Dashboard
+                </h1>
+
+                <p id="todayDate"></p>
+
+            </div>
+
+            <div class="sync-status">
+
+                <span id="syncIndicator">
+                    🟢 Tersinkron
+                </span>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- DASHBOARD -->
+
+        <section id="dashboard" class="page active">
+
+            <div class="cards">
+
+                <div class="card">
+                    <h3>Total Siswa</h3>
+                    <h2 id="totalStudents">0</h2>
+                </div>
+
+                <div class="card">
+                    <h3>Hadir</h3>
+                    <h2 id="presentCount">0</h2>
+                </div>
+
+                <div class="card">
+                    <h3>Izin</h3>
+                    <h2 id="permitCount">0</h2>
+                </div>
+
+                <div class="card">
+                    <h3>Sakit</h3>
+                    <h2 id="sickCount">0</h2>
+                </div>
+
+                <div class="card">
+                    <h3>Alfa</h3>
+                    <h2 id="absentCount">0</h2>
+                </div>
+
+            </div>
+
+
+
+            <h2 class="section-title">
+                Pilih Kelas
+            </h2>
+
+            <div class="class-grid">
+
+                <button class="class-card" data-class="1">Kelas 1</button>
+
+                <button class="class-card" data-class="2">Kelas 2</button>
+
+                <button class="class-card" data-class="3">Kelas 3</button>
+
+                <button class="class-card" data-class="4">Kelas 4</button>
+
+                <button class="class-card" data-class="5">Kelas 5</button>
+
+                <button class="class-card" data-class="6">Kelas 6</button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- DATA SISWA -->
+
+        <section id="students" class="page">
+
+        </section>
+
+
+
+        <!-- ABSENSI -->
+
+        <section id="attendance" class="page">
+
+        </section>
+
+
+
+        <!-- LAPORAN -->
+
+        <section id="reports" class="page">
+
+        </section>
+
+
+
+        <!-- PENGATURAN -->
+
+        <section id="settings" class="page">
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="js/database.js"></script>
+<script src="js/students.js"></script>
+<script src="js/attendance.js"></script>
+<script src="js/report.js"></script>
+<script src="js/sheets.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
 </html>
