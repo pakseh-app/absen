@@ -1,285 +1,109 @@
 /*
 ===========================================
 SIMA
-Database (IndexedDB)
-Version : 2.0 FINAL
+Dexie Database
 ===========================================
 */
 
+const db = new Dexie("SIMA_DB");
+
+db.version(1).stores({
+
+    students: "nis,nama,kelas",
+
+    attendance: "[date+nis],date,kelas,status",
+
+    settings: "key"
+
+});
+
 const Database = {
-
-    db: null,
-
-    async init() {
-
-        return new Promise((resolve, reject) => {
-
-            const request = indexedDB.open("SIMA_DB", 1);
-
-            request.onerror = () => reject(request.error);
-
-            request.onupgradeneeded = (event) => {
-
-                const db = event.target.result;
-
-                if (!db.objectStoreNames.contains("students")) {
-
-                    db.createObjectStore("students", {
-                        keyPath: "nis"
-                    });
-
-                }
-
-                if (!db.objectStoreNames.contains("attendance")) {
-
-                    db.createObjectStore("attendance", {
-                        keyPath: ["date", "nis"]
-                    });
-
-                }
-
-                if (!db.objectStoreNames.contains("settings")) {
-
-                    db.createObjectStore("settings", {
-                        keyPath: "key"
-                    });
-
-                }
-
-            };
-
-            request.onsuccess = () => {
-
-                this.db = request.result;
-
-                resolve();
-
-            };
-
-        });
-
-    },
-
-
-
-    /*
-    ==========================================
-    STUDENTS
-    ==========================================
-    */
 
     async getStudents() {
 
-        return this.getAll("students");
+        return await db.students.toArray();
 
     },
 
     async getStudent(nis) {
 
-        return new Promise((resolve) => {
-
-            const tx = this.db.transaction("students", "readonly");
-
-            const store = tx.objectStore("students");
-
-            const req = store.get(nis);
-
-            req.onsuccess = () => resolve(req.result);
-
-            req.onerror = () => resolve(null);
-
-        });
+        return await db.students.get(nis);
 
     },
 
-    async addStudent(student) {
+    async saveStudent(student) {
 
-        return this.put("students", student);
-
-    },
-
-    async updateStudent(student) {
-
-        return this.put("students", student);
+        await db.students.put(student);
 
     },
 
     async deleteStudent(nis) {
 
-        return new Promise((resolve) => {
-
-            const tx = this.db.transaction("students", "readwrite");
-
-            tx.objectStore("students").delete(nis);
-
-            tx.oncomplete = () => resolve();
-
-        });
+        await db.students.delete(nis);
 
     },
 
 
-
-    /*
-    ==========================================
-    ATTENDANCE
-    ==========================================
-    */
 
     async getAttendance() {
 
-        return this.getAll("attendance");
+        return await db.attendance.toArray();
 
     },
 
-    async getTodayAttendance() {
+    async getAttendanceByDate(date) {
 
-        const today = new Date().toISOString().slice(0,10);
-
-        const all = await this.getAttendance();
-
-        return all.filter(item => item.date === today);
-
-    },
-
-    async saveAttendance(record) {
-
-        return this.put("attendance", record);
+        return await db.attendance
+            .where("date")
+            .equals(date)
+            .toArray();
 
     },
 
+    async saveAttendance(data) {
+
+        await db.attendance.put(data);
+
+    },
 
 
-    /*
-    ==========================================
-    SETTINGS
-    ==========================================
-    */
+
+    async clearAttendance() {
+
+        await db.attendance.clear();
+
+    },
+
+
+
+    async clearStudents() {
+
+        await db.students.clear();
+
+    },
+
+
 
     async saveSetting(key,value){
 
-        return this.put("settings",{
+        await db.settings.put({
 
-            key:key,
+            key,
 
-            value:value
+            value
 
         });
 
     },
+
+
 
     async getSetting(key){
 
-        return new Promise(resolve=>{
+        const data=await db.settings.get(key);
 
-            const tx=this.db.transaction("settings","readonly");
-
-            const store=tx.objectStore("settings");
-
-            const req=store.get(key);
-
-            req.onsuccess=()=>{
-
-                resolve(req.result);
-
-            };
-
-            req.onerror=()=>{
-
-                resolve(null);
-
-            };
-
-        });
-
-    },
-
-
-
-    /*
-    ==========================================
-    GENERIC
-    ==========================================
-    */
-
-    put(storeName,data){
-
-        return new Promise(resolve=>{
-
-            const tx=this.db.transaction(storeName,"readwrite");
-
-            tx.objectStore(storeName).put(data);
-
-            tx.oncomplete=()=>resolve();
-
-        });
-
-    },
-
-    getAll(storeName){
-
-        return new Promise(resolve=>{
-
-            const tx=this.db.transaction(storeName,"readonly");
-
-            const store=tx.objectStore(storeName);
-
-            const req=store.getAll();
-
-            req.onsuccess=()=>{
-
-                resolve(req.result);
-
-            };
-
-        });
-
-    },
-
-
-
-    /*
-    ==========================================
-    CLEAR DATABASE
-    ==========================================
-    */
-
-    async clear(){
-
-        const stores=[
-
-            "students",
-
-            "attendance",
-
-            "settings"
-
-        ];
-
-        for(const name of stores){
-
-            await new Promise(resolve=>{
-
-                const tx=this.db.transaction(name,"readwrite");
-
-                tx.objectStore(name).clear();
-
-                tx.oncomplete=()=>resolve();
-
-            });
-
-        }
+        return data?.value;
 
     }
 
 };
-
-
-
-/*
-===========================================
-START DATABASE
-===========================================
-*/
-
-Database.init();
