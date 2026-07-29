@@ -8,114 +8,158 @@ Version : 1.0
 
 const Students = {
 
-    currentClass: "",
+    students: [],
 
-    init() {
+    filterClass: "",
 
-        this.renderPage();
+    keyword: "",
+
+    async init() {
+
+        await this.load();
+
+        this.render();
 
     },
 
 
 
     /*
-    ==========================
-    HALAMAN
-    ==========================
+    ===========================================
+    LOAD DATA
+    ===========================================
     */
 
-    renderPage() {
+    async load() {
+
+        this.students = await Database.getStudents();
+
+    },
+
+
+
+    /*
+    ===========================================
+    RENDER PAGE
+    ===========================================
+    */
+
+    render() {
 
         const page = document.getElementById("students");
 
         if (!page) return;
 
         page.innerHTML = `
-            <div class="students-header">
 
-                <button class="btn" id="btnAddStudent">
+            <div class="toolbar">
+
+                <div class="toolbar-left">
+
+                    <input
+                        type="text"
+                        id="searchStudent"
+                        class="input"
+                        placeholder="Cari nama atau NIS">
+
+                    <select
+                        id="filterClass"
+                        class="input">
+
+                        <option value="">Semua Kelas</option>
+
+                        <option value="1">Kelas 1</option>
+                        <option value="2">Kelas 2</option>
+                        <option value="3">Kelas 3</option>
+                        <option value="4">Kelas 4</option>
+                        <option value="5">Kelas 5</option>
+                        <option value="6">Kelas 6</option>
+
+                    </select>
+
+                </div>
+
+                <button
+                    id="btnAddStudent"
+                    class="btn">
+
                     + Tambah Siswa
-                </button>
 
-                <input
-                    type="text"
-                    id="searchStudent"
-                    placeholder="Cari NIS atau Nama..."
-                >
+                </button>
 
             </div>
 
             <div id="studentTable"></div>
 
-            <div id="studentModal" class="hidden"></div>
         `;
 
-        this.renderTable();
-
-        this.bindEvents();
-
-    },
-
-
-
-    /*
-    ==========================
-    EVENTS
-    ==========================
-    */
-
-    bindEvents() {
-
         document
-            .getElementById("btnAddStudent")
-            .addEventListener("click", () => {
 
-                this.showForm();
-
-            });
-
-        document
             .getElementById("searchStudent")
-            .addEventListener("keyup", e => {
 
-                this.renderTable(e.target.value);
+            .addEventListener("input",(e)=>{
+
+                this.keyword=e.target.value.toLowerCase();
+
+                this.refresh();
 
             });
+
+        document
+
+            .getElementById("filterClass")
+
+            .addEventListener("change",(e)=>{
+
+                this.filterClass=e.target.value;
+
+                this.refresh();
+
+            });
+
+        document
+
+            .getElementById("btnAddStudent")
+
+            .addEventListener("click",()=>{
+
+                this.form();
+
+            });
+
+        this.refresh();
 
     },
 
 
 
     /*
-    ==========================
-    TABLE
-    ==========================
+    ===========================================
+    FILTER
+    ===========================================
     */
 
-    renderTable(keyword = "") {
+    getFiltered() {
 
-        const container =
-            document.getElementById("studentTable");
+        let data=[...this.students];
 
-        let students = Database.getStudents();
+        if(this.keyword!=""){
 
-        keyword = keyword.toLowerCase();
-
-        if (keyword !== "") {
-
-            students = students.filter(student => {
+            data=data.filter(item=>{
 
                 return (
 
-                    student.nama
-                        .toLowerCase()
-                        .includes(keyword)
+                    item.nama
+
+                    .toLowerCase()
+
+                    .includes(this.keyword)
 
                     ||
 
-                    student.nis
-                        .toLowerCase()
-                        .includes(keyword)
+                    item.nis
+
+                    .includes(this.keyword)
 
                 );
 
@@ -123,288 +167,359 @@ const Students = {
 
         }
 
-        let html = `
-            <table>
+        if(this.filterClass!=""){
 
-                <thead>
+            data=data.filter(
 
-                    <tr>
+                item=>item.kelas==this.filterClass
 
-                        <th>NIS</th>
-
-                        <th>Nama</th>
-
-                        <th>JK</th>
-
-                        <th>Kelas</th>
-
-                        <th>Aksi</th>
-
-                    </tr>
-
-                </thead>
-
-                <tbody>
-        `;
-
-        if (students.length === 0) {
-
-            html += `
-                <tr>
-
-                    <td colspan="5" class="text-center">
-
-                        Belum ada data siswa
-
-                    </td>
-
-                </tr>
-            `;
-
-        } else {
-
-            students.forEach(student => {
-
-                html += `
-                    <tr>
-
-                        <td>${student.nis}</td>
-
-                        <td>${student.nama}</td>
-
-                        <td>${student.jk}</td>
-
-                        <td>${student.kelas}</td>
-
-                        <td>
-
-                            <button
-                                class="btn btn-edit"
-                                onclick="Students.edit('${student.nis}')"
-                            >
-                                Edit
-                            </button>
-
-                            <button
-                                class="btn btn-delete"
-                                onclick="Students.remove('${student.nis}')"
-                            >
-                                Hapus
-                            </button>
-
-                        </td>
-
-                    </tr>
-                `;
-
-            });
+            );
 
         }
 
-        html += `
-                </tbody>
-
-            </table>
-        `;
-
-        container.innerHTML = html;
+        return data;
 
     },
 
 
 
     /*
-    ==========================
-    FORM
-    ==========================
+    ===========================================
+    TABLE
+    ===========================================
     */
 
-    showForm(student = null) {
+    refresh(){
 
-        const modal =
-            document.getElementById("studentModal");
+        const table=document.getElementById("studentTable");
 
-        modal.classList.remove("hidden");
+        const data=this.getFiltered();
 
-        modal.innerHTML = `
+        let html=`
 
-            <div class="modal">
+        <table>
 
-                <div class="modal-content">
+        <thead>
 
-                    <h2>
+        <tr>
 
-                        ${student ? "Edit" : "Tambah"} Siswa
+        <th>NIS</th>
 
-                    </h2>
+        <th>Nama</th>
 
-                    <div class="form-group">
+        <th>JK</th>
 
-                        <label>NIS</label>
+        <th>Kelas</th>
 
-                        <input
-                            id="nis"
-                            value="${student ? student.nis : ""}"
-                            ${student ? "readonly" : ""}
-                        >
+        <th width="150">
 
-                    </div>
+        Aksi
 
-                    <div class="form-group">
+        </th>
 
-                        <label>Nama</label>
+        </tr>
 
-                        <input
-                            id="nama"
-                            value="${student ? student.nama : ""}"
-                        >
+        </thead>
 
-                    </div>
+        <tbody>
 
-                    <div class="form-group">
+        `;
 
-                        <label>Jenis Kelamin</label>
+        if(data.length===0){
 
-                        <select id="jk">
+            html+=`
 
-                            <option value="L">Laki-laki</option>
+            <tr>
 
-                            <option value="P">Perempuan</option>
+            <td colspan="5"
 
-                        </select>
+            class="text-center">
 
-                    </div>
+            Belum ada data siswa.
 
-                    <div class="form-group">
+            </td>
 
-                        <label>Kelas</label>
+            </tr>
 
-                        <select id="kelas">
+            `;
 
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
+        }
 
-                        </select>
+        data.forEach(student=>{
 
-                    </div>
+            html+=`
 
-                    <button
-                        class="btn"
-                        id="btnSaveStudent"
-                    >
+            <tr>
 
-                        Simpan
+            <td>${student.nis}</td>
 
-                    </button>
+            <td>${student.nama}</td>
 
-                    <button
-                        class="btn btn-delete mt-20"
-                        id="btnCancelStudent"
-                    >
+            <td>${student.jk}</td>
 
-                        Batal
+            <td>${student.kelas}</td>
 
-                    </button>
+            <td>
 
-                </div>
+                <button
+
+                    class="btn-small edit"
+
+                    onclick="Students.edit('${student.nis}')">
+
+                    Edit
+
+                </button>
+
+                <button
+
+                    class="btn-small danger"
+
+                    onclick="Students.remove('${student.nis}')">
+
+                    Hapus
+
+                </button>
+
+            </td>
+
+            </tr>
+
+            `;
+
+        });
+
+        html+=`
+
+        </tbody>
+
+        </table>
+
+        `;
+
+        table.innerHTML=html;
+
+    },
+
+        /*
+    ===========================================
+    FORM TAMBAH / EDIT
+    ===========================================
+    */
+
+    form(student = null) {
+
+        const edit = student !== null;
+
+        UI.open(
+
+            edit ? "Edit Siswa" : "Tambah Siswa",
+
+            `
+
+            <div class="form-group">
+
+                <label>NIS</label>
+
+                <input
+                    id="studentNIS"
+                    class="input"
+                    type="text"
+                    value="${edit ? student.nis : ""}"
+                    ${edit ? "readonly" : ""}>
 
             </div>
 
-        `;
+            <div class="form-group">
 
-        if (student) {
+                <label>Nama Lengkap</label>
 
-            document.getElementById("jk").value = student.jk;
+                <input
+                    id="studentName"
+                    class="input"
+                    type="text"
+                    value="${edit ? student.nama : ""}">
 
-            document.getElementById("kelas").value = student.kelas;
+            </div>
 
+            <div class="form-group">
+
+                <label>Jenis Kelamin</label>
+
+                <select
+                    id="studentGender"
+                    class="input">
+
+                    <option value="L"
+                        ${edit && student.jk=="L" ? "selected" : ""}>
+
+                        Laki-laki
+
+                    </option>
+
+                    <option value="P"
+                        ${edit && student.jk=="P" ? "selected" : ""}>
+
+                        Perempuan
+
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label>Kelas</label>
+
+                <select
+                    id="studentClass"
+                    class="input">
+
+                    <option value="1">Kelas 1</option>
+                    <option value="2">Kelas 2</option>
+                    <option value="3">Kelas 3</option>
+                    <option value="4">Kelas 4</option>
+                    <option value="5">Kelas 5</option>
+                    <option value="6">Kelas 6</option>
+
+                </select>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    class="btn btn-secondary"
+                    id="cancelStudent">
+
+                    Batal
+
+                </button>
+
+                <button
+                    class="btn"
+                    id="saveStudent">
+
+                    Simpan
+
+                </button>
+
+            </div>
+
+        `
+        );
+
+        if(edit){
+
+            document.getElementById("studentClass").value = student.kelas;
         }
 
         document
-            .getElementById("btnSaveStudent")
-            .addEventListener("click", () => {
-
-                this.save(student);
-
-            });
+            .getElementById("cancelStudent")
+            .onclick = () => UI.close();
 
         document
-            .getElementById("btnCancelStudent")
-            .addEventListener("click", () => {
-
-                modal.classList.add("hidden");
-
-            });
+            .getElementById("saveStudent")
+            .onclick = () => this.save(edit);
 
     },
 
 
 
     /*
-    ==========================
-    SAVE
-    ==========================
+    ===========================================
+    SIMPAN
+    ===========================================
     */
 
-    save(oldStudent = null) {
+    async save(edit = false) {
 
-        const student = {
+        const nis = document
+            .getElementById("studentNIS")
+            .value
+            .trim();
 
-            nis: document.getElementById("nis").value.trim(),
+        const nama = document
+            .getElementById("studentName")
+            .value
+            .trim();
 
-            nama: document.getElementById("nama").value.trim(),
+        const jk = document
+            .getElementById("studentGender")
+            .value;
 
-            jk: document.getElementById("jk").value,
+        const kelas = document
+            .getElementById("studentClass")
+            .value;
 
-            kelas: document.getElementById("kelas").value
+        if(nis === ""){
 
-        };
-
-        if (
-            student.nis === "" ||
-            student.nama === ""
-        ) {
-
-            alert("Lengkapi data.");
+            UI.error("NIS wajib diisi.");
 
             return;
 
         }
 
-        if (oldStudent) {
+        if(!Utils.validNIS(nis)){
 
-            Database.updateStudent(
-                oldStudent.nis,
-                student
-            );
+            UI.error("NIS hanya boleh angka.");
 
-        } else {
+            return;
 
-            if (Database.getStudent(student.nis)) {
+        }
 
-                alert("NIS sudah digunakan.");
+        if(nama === ""){
+
+            UI.error("Nama siswa wajib diisi.");
+
+            return;
+
+        }
+
+        if(!edit){
+
+            const cek = await Database.getStudent(nis);
+
+            if(cek){
+
+                UI.error("NIS sudah digunakan.");
 
                 return;
 
             }
 
-            Database.addStudent(student);
+        }
+
+        await Database.saveStudent({
+
+            nis,
+
+            nama,
+
+            jk,
+
+            kelas
+
+        });
+
+        await this.load();
+
+        this.refresh();
+
+        UI.close();
+
+        UI.success("Data siswa berhasil disimpan.");
+
+        if(typeof Sheets !== "undefined"){
+
+            Sheets.syncStudents();
 
         }
 
-        document
-            .getElementById("studentModal")
-            .classList.add("hidden");
+        if(typeof UI.refreshDashboard === "function"){
 
-        this.renderTable();
-
-        if (typeof App !== "undefined") {
-
-            App.loadDashboard();
+            UI.refreshDashboard();
 
         }
 
@@ -413,47 +528,68 @@ const Students = {
 
 
     /*
-    ==========================
+    ===========================================
     EDIT
-    ==========================
+    ===========================================
     */
 
-    edit(nis) {
+    async edit(nis){
 
-        const student =
-            Database.getStudent(nis);
+        const student = await Database.getStudent(nis);
 
-        if (!student) return;
+        if(!student){
 
-        this.showForm(student);
-
-    },
-
-
-
-    /*
-    ==========================
-    DELETE
-    ==========================
-    */
-
-    remove(nis) {
-
-        if (!confirm("Hapus siswa ini?")) {
+            UI.error("Data tidak ditemukan.");
 
             return;
 
         }
 
-        Database.deleteStudent(nis);
+        this.form(student);
 
-        this.renderTable();
+    },
 
-        if (typeof App !== "undefined") {
 
-            App.loadDashboard();
 
-        }
+    /*
+    ===========================================
+    HAPUS
+    ===========================================
+    */
+
+    remove(nis){
+
+        UI.confirm(
+
+            "Hapus Data",
+
+            "Yakin ingin menghapus siswa ini?",
+
+            async()=>{
+
+                await Database.deleteStudent(nis);
+
+                await this.load();
+
+                this.refresh();
+
+                UI.success("Data berhasil dihapus.");
+
+                if(typeof Sheets !== "undefined"){
+
+                    Sheets.syncStudents();
+
+                }
+
+                if(typeof UI.refreshDashboard==="function"){
+
+                    UI.refreshDashboard();
+
+                }
+
+            }
+
+        );
 
     }
 
@@ -461,8 +597,14 @@ const Students = {
 
 
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
 
-    Students.init();
+    "DOMContentLoaded",
 
-});
+    ()=>{
+
+        Students.init();
+
+    }
+
+);
