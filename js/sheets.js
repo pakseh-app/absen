@@ -8,31 +8,27 @@ Version : 1.0
 
 const Sheets = {
 
-    /*
-    ===========================================
-    GANTI DENGAN URL WEB APP GOOGLE APPS SCRIPT
-    ===========================================
-    */
+    scriptUrl: "",
 
-    API_URL: "https://script.google.com/macros/s/AKfycbxJqTbfvS4q69Gs5xEqwfY8-wQjc9udp3v8bT37B9_srest8PUojPhcwhlgy7NeU3bXZw/exec",
+    syncing: false,
 
 
 
     /*
     ===========================================
-    STATUS SYNC
+    INIT
     ===========================================
     */
 
-    setStatus(text, color = "green") {
+    async init(){
 
-        const indicator = document.getElementById("syncIndicator");
+        this.scriptUrl = await Database.getSetting("scriptUrl") || "";
 
-        if (!indicator) return;
+        window.addEventListener("online", () => {
 
-        indicator.textContent = text;
+            this.autoSync();
 
-        indicator.style.color = color;
+        });
 
     },
 
@@ -40,13 +36,21 @@ const Sheets = {
 
     /*
     ===========================================
-    CEK URL API
+    URL VALIDATION
     ===========================================
     */
 
-    isConfigured() {
+    async reloadConfig(){
 
-        return this.API_URL !== "";
+        this.scriptUrl = await Database.getSetting("scriptUrl") || "";
+
+    },
+
+
+
+    isReady(){
+
+        return this.scriptUrl !== "";
 
     },
 
@@ -54,49 +58,47 @@ const Sheets = {
 
     /*
     ===========================================
-    KIRIM DATA SISWA
+    REQUEST
     ===========================================
     */
 
-    async syncStudents() {
+    async request(action,data={}){
 
-        if (!this.isConfigured()) return;
+        await this.reloadConfig();
 
-        this.setStatus("🔄 Sinkronisasi...", "orange");
+        if(!this.isReady()){
 
-        try {
+            return {
 
-            await fetch(this.API_URL, {
+                success:false,
 
-                method: "POST",
+                message:"URL Apps Script belum diisi."
 
-                headers: {
-
-                    "Content-Type": "application/json"
-
-                },
-
-                body: JSON.stringify({
-
-                    action: "students",
-
-                    data: Database.getStudents()
-
-                })
-
-            });
-
-            this.setStatus("🟢 Tersinkron", "green");
+            };
 
         }
 
-        catch(error){
+        const response = await fetch(this.scriptUrl,{
 
-            console.error(error);
+            method:"POST",
 
-            this.setStatus("🔴 Gagal Sinkron", "red");
+            headers:{
 
-        }
+                "Content-Type":"application/json"
+
+            },
+
+            body:JSON.stringify({
+
+                action,
+
+                data
+
+            })
+
+        });
+
+        return await response.json();
 
     },
 
@@ -104,45 +106,117 @@ const Sheets = {
 
     /*
     ===========================================
-    KIRIM DATA ABSENSI
+    SYNC STUDENTS
     ===========================================
     */
 
-    async syncAttendance() {
+    async syncStudents(){
 
-        if (!this.isConfigured()) return;
+        if(!navigator.onLine) return;
 
-        this.setStatus("🔄 Sinkronisasi...", "orange");
+        if(this.syncing) return;
+
+        this.syncing = true;
 
         try{
 
-            await fetch(this.API_URL,{
+            UI.setSync("☁ Sinkronisasi...","#2563eb");
 
-                method:"POST",
+            const students = await Database.getStudents();
 
-                headers:{
-                    "Content-Type":"application/json"
-                },
+            await this.request(
 
-                body:JSON.stringify({
+                "syncStudents",
 
-                    action:"attendance",
+                students
 
-                    data:Database.getAttendance()
+            );
 
-                })
+            UI.online();
 
-            });
+        }catch(err){
 
-            this.setStatus("🟢 Tersinkron","green");
+            console.error(err);
+
+            UI.offline();
 
         }
 
-        catch(error){
+        this.syncing = false;
 
-            console.error(error);
+    },
 
-            this.setStatus("🔴 Gagal Sinkron","red");
+
+
+    /*
+    ===========================================
+    SYNC ATTENDANCE
+    ===========================================
+    */
+
+    async syncAttendance(){
+
+        if(!navigator.onLine) return;
+
+        if(this.syncing) return;
+
+        this.syncing = true;
+
+        try{
+
+            UI.setSync("☁ Sinkronisasi...","#2563eb");
+
+            const attendance = await Database.getAttendance();
+
+            await this.request(
+
+                "syncAttendance",
+
+                attendance
+
+            );
+
+            UI.online();
+
+        }catch(err){
+
+            console.error(err);
+
+            UI.offline();
+
+        }
+
+        this.syncing = false;
+
+    },
+
+        /*
+    ===========================================
+    DOWNLOAD STUDENTS
+    ===========================================
+    */
+
+    async downloadStudents(){
+
+        try{
+
+            const result = await this.request("getStudents");
+
+            if(!result.success){
+
+                return;
+
+            }
+
+            if(Array.isArray(result.data)){
+
+                await Database.importStudents(result.data);
+
+            }
+
+        }catch(err){
+
+            console.error(err);
 
         }
 
@@ -152,23 +226,137 @@ const Sheets = {
 
     /*
     ===========================================
-    SINKRON SEMUA DATA
+    DOWNLOAD ATTENDANCE
     ===========================================
     */
 
-    async syncAll(){
+    async downloadAttendance(){
+
+        try{
+
+            const result = await this.request("getAttendance");
+
+            if(!result.success){
+
+                return;
+
+            }
+
+            if(Array.isArray(result.data)){
+
+                await Database.importAttendance(result.data);
+
+            }
+
+        }catch(err){
+
+            console.error(err);
+
+        }
+
+    },
+
+
+
+    /*
+    ===========================================
+    FULL SYNC
+    ===========================================
+    */
+
+    async fullSync(){
 
         if(!navigator.onLine){
-
-            this.setStatus("📴 Offline","gray");
 
             return;
 
         }
 
-        await this.syncStudents();
+        try{
 
-        await this.syncAttendance();
+            UI.setSync("☁ Sinkronisasi...","#2563eb");
+
+            await this.syncStudents();
+
+            await this.syncAttendance();
+
+            await this.downloadStudents();
+
+            await this.downloadAttendance();
+
+            if(typeof Students!=="undefined"){
+
+                await Students.load();
+
+                Students.refresh();
+
+            }
+
+            if(typeof Reports!=="undefined"){
+
+                await Reports.reload();
+
+            }
+
+            if(typeof UI.refreshDashboard==="function"){
+
+                await UI.refreshDashboard();
+
+            }
+
+            UI.success("Sinkronisasi selesai.");
+
+            UI.online();
+
+        }catch(err){
+
+            console.error(err);
+
+            UI.offline();
+
+        }
+
+    },
+
+
+
+    /*
+    ===========================================
+    AUTO SYNC
+    ===========================================
+    */
+
+    async autoSync(){
+
+        if(!navigator.onLine){
+
+            return;
+
+        }
+
+        await this.fullSync();
+
+    },
+
+
+
+    /*
+    ===========================================
+    RETRY
+    ===========================================
+    */
+
+    retry(){
+
+        setTimeout(()=>{
+
+            if(navigator.onLine){
+
+                this.fullSync();
+
+            }
+
+        },5000);
 
     }
 
@@ -178,35 +366,52 @@ const Sheets = {
 
 /*
 ===========================================
-AUTO SYNC
+AUTO START
 ===========================================
 */
 
-window.addEventListener("online",()=>{
+document.addEventListener(
 
-    Sheets.syncAll();
+    "DOMContentLoaded",
 
-});
+    async()=>{
 
+        await Sheets.init();
 
+        if(navigator.onLine){
 
-/*
-===========================================
-SYNC SAAT APLIKASI DIBUKA
-===========================================
-*/
+            await Sheets.fullSync();
 
-document.addEventListener("DOMContentLoaded",()=>{
-
-    if(navigator.onLine){
-
-        Sheets.syncAll();
-
-    }
-    else{
-
-        Sheets.setStatus("📴 Offline","gray");
+        }
 
     }
 
-});
+);
+
+
+
+window.addEventListener(
+
+    "online",
+
+    ()=>{
+
+        Sheets.fullSync();
+
+    }
+
+);
+
+
+
+window.addEventListener(
+
+    "offline",
+
+    ()=>{
+
+        UI.offline();
+
+    }
+
+);
