@@ -1,237 +1,274 @@
 /*
 ===========================================
 SIMA
-Local Database
-Version : 1.0
+Database (IndexedDB)
+Version : 2.0 FINAL
 ===========================================
 */
 
 const Database = {
 
-    DB_NAME: "SIMA_DB",
+    db: null,
 
-    STORAGE_KEY: "SIMA_DATA",
+    async init() {
 
-    data: {
-        students: [],
-        attendance: [],
-        settings: {
-            schoolName: "Madrasah Ibtidaiyah",
-            sync: true
-        }
-    },
+        return new Promise((resolve, reject) => {
 
+            const request = indexedDB.open("SIMA_DB", 1);
 
+            request.onerror = () => reject(request.error);
 
-    /*
-    ==========================
-    INIT
-    ==========================
-    */
+            request.onupgradeneeded = (event) => {
 
-    init() {
+                const db = event.target.result;
 
-        const saved = localStorage.getItem(this.STORAGE_KEY);
+                if (!db.objectStoreNames.contains("students")) {
 
-        if (saved) {
+                    db.createObjectStore("students", {
+                        keyPath: "nis"
+                    });
 
-            this.data = JSON.parse(saved);
+                }
 
-        } else {
+                if (!db.objectStoreNames.contains("attendance")) {
 
-            this.save();
+                    db.createObjectStore("attendance", {
+                        keyPath: ["date", "nis"]
+                    });
 
-        }
+                }
 
-    },
+                if (!db.objectStoreNames.contains("settings")) {
 
+                    db.createObjectStore("settings", {
+                        keyPath: "key"
+                    });
 
+                }
 
-    /*
-    ==========================
-    SAVE
-    ==========================
-    */
+            };
 
-    save() {
+            request.onsuccess = () => {
 
-        localStorage.setItem(
-            this.STORAGE_KEY,
-            JSON.stringify(this.data)
-        );
+                this.db = request.result;
+
+                resolve();
+
+            };
+
+        });
 
     },
 
 
 
     /*
-    ==========================
+    ==========================================
     STUDENTS
-    ==========================
+    ==========================================
     */
 
-    getStudents() {
+    async getStudents() {
 
-        return this.data.students;
-
-    },
-
-    getStudent(nis) {
-
-        return this.data.students.find(
-            student => student.nis === nis
-        );
+        return this.getAll("students");
 
     },
 
-    addStudent(student) {
+    async getStudent(nis) {
 
-        this.data.students.push(student);
+        return new Promise((resolve) => {
 
-        this.save();
+            const tx = this.db.transaction("students", "readonly");
 
-    },
+            const store = tx.objectStore("students");
 
-    updateStudent(nis, student) {
+            const req = store.get(nis);
 
-        const index = this.data.students.findIndex(
-            item => item.nis === nis
-        );
+            req.onsuccess = () => resolve(req.result);
 
-        if (index === -1) return false;
+            req.onerror = () => resolve(null);
 
-        this.data.students[index] = student;
-
-        this.save();
-
-        return true;
+        });
 
     },
 
-    deleteStudent(nis) {
+    async addStudent(student) {
 
-        this.data.students =
-            this.data.students.filter(
-                student => student.nis !== nis
-            );
+        return this.put("students", student);
 
-        this.save();
+    },
+
+    async updateStudent(student) {
+
+        return this.put("students", student);
+
+    },
+
+    async deleteStudent(nis) {
+
+        return new Promise((resolve) => {
+
+            const tx = this.db.transaction("students", "readwrite");
+
+            tx.objectStore("students").delete(nis);
+
+            tx.oncomplete = () => resolve();
+
+        });
 
     },
 
 
 
     /*
-    ==========================
+    ==========================================
     ATTENDANCE
-    ==========================
+    ==========================================
     */
 
-    getAttendance() {
+    async getAttendance() {
 
-        return this.data.attendance;
-
-    },
-
-    getTodayAttendance() {
-
-        const today = new Date().toISOString().slice(0, 10);
-
-        return this.data.attendance.filter(
-            item => item.date === today
-        );
+        return this.getAll("attendance");
 
     },
 
-    getAttendanceByClass(kelas) {
+    async getTodayAttendance() {
 
-        const today = new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0,10);
 
-        return this.data.attendance.filter(item => {
+        const all = await this.getAttendance();
 
-            return (
-                item.date === today &&
-                item.class === kelas
-            );
+        return all.filter(item => item.date === today);
+
+    },
+
+    async saveAttendance(record) {
+
+        return this.put("attendance", record);
+
+    },
+
+
+
+    /*
+    ==========================================
+    SETTINGS
+    ==========================================
+    */
+
+    async saveSetting(key,value){
+
+        return this.put("settings",{
+
+            key:key,
+
+            value:value
 
         });
 
     },
 
-    saveAttendance(record) {
+    async getSetting(key){
 
-        const index = this.data.attendance.findIndex(item => {
+        return new Promise(resolve=>{
 
-            return (
-                item.date === record.date &&
-                item.nis === record.nis
-            );
+            const tx=this.db.transaction("settings","readonly");
+
+            const store=tx.objectStore("settings");
+
+            const req=store.get(key);
+
+            req.onsuccess=()=>{
+
+                resolve(req.result);
+
+            };
+
+            req.onerror=()=>{
+
+                resolve(null);
+
+            };
 
         });
 
-        if (index === -1) {
+    },
 
-            this.data.attendance.push(record);
 
-        } else {
 
-            this.data.attendance[index] = record;
+    /*
+    ==========================================
+    GENERIC
+    ==========================================
+    */
+
+    put(storeName,data){
+
+        return new Promise(resolve=>{
+
+            const tx=this.db.transaction(storeName,"readwrite");
+
+            tx.objectStore(storeName).put(data);
+
+            tx.oncomplete=()=>resolve();
+
+        });
+
+    },
+
+    getAll(storeName){
+
+        return new Promise(resolve=>{
+
+            const tx=this.db.transaction(storeName,"readonly");
+
+            const store=tx.objectStore(storeName);
+
+            const req=store.getAll();
+
+            req.onsuccess=()=>{
+
+                resolve(req.result);
+
+            };
+
+        });
+
+    },
+
+
+
+    /*
+    ==========================================
+    CLEAR DATABASE
+    ==========================================
+    */
+
+    async clear(){
+
+        const stores=[
+
+            "students",
+
+            "attendance",
+
+            "settings"
+
+        ];
+
+        for(const name of stores){
+
+            await new Promise(resolve=>{
+
+                const tx=this.db.transaction(name,"readwrite");
+
+                tx.objectStore(name).clear();
+
+                tx.oncomplete=()=>resolve();
+
+            });
 
         }
-
-        this.save();
-
-    },
-
-
-
-    /*
-    ==========================
-    SETTINGS
-    ==========================
-    */
-
-    getSettings() {
-
-        return this.data.settings;
-
-    },
-
-    saveSettings(settings) {
-
-        this.data.settings = settings;
-
-        this.save();
-
-    },
-
-
-
-    /*
-    ==========================
-    RESET DATABASE
-    ==========================
-    */
-
-    reset() {
-
-        this.data = {
-
-            students: [],
-
-            attendance: [],
-
-            settings: {
-
-                schoolName: "Madrasah Ibtidaiyah",
-
-                sync: true
-
-            }
-
-        };
-
-        this.save();
 
     }
 
@@ -241,7 +278,7 @@ const Database = {
 
 /*
 ===========================================
-INITIALIZE DATABASE
+START DATABASE
 ===========================================
 */
 
